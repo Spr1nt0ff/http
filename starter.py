@@ -91,30 +91,37 @@ class RequestHandler (AccessManagerRequestHandler):
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
 
-        # Формуємо список посилань для тестування
         test_links = [
-            ("/user/auth", "Без параметрів"),
-            ("/user/auth?", "Без параметрів, але з '?'"),
-            ("/user/auth?hash=1a2d==&p=50/50&q=who?&x=10&y=20&x=30&json", "З параметрами та повторами (x)"),
-            ("/user/auth?hash=1a2d==&p=50/50&q=who?&&x=10&y=20&x=30&json&url=%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&2+2=4", "URL-encoded ключі та значення")
+            ("/", "Головна (без параметрів)"),
+            ("/user", "З сервісом (/user)"),
+            ("/user/", "З сервісом та слешем на кінці (/user/)"),
+            ("/user/auth", "З сервісом та розділом (/user/auth)"),
+            ("/user/auth/secret", "З глибоким вкладенням (/user/auth/secret)"),
+            ("/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&2+2=4", "URL-кодовані значення у самому шляху (без '?')")
         ]
 
-        links_html = "".join([f'<li><a href="{href}">{desc}</a></li>' for href, desc in test_links])
+        links_html = "".join([f'<li><a href="{href}">{desc}</a> <code>{href}</code></li>' for href, desc in test_links])
 
         response_html = f"""
         <html>
-        <head><title>HTTP Test Server</title></head>
+        <head>
+            <title>HTTP Routing Test</title>
+            <style>
+                body {{ font-family: sans-serif; padding: 20px; }}
+                code {{ background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; }}
+                li {{ margin-bottom: 8px; }}
+            </style>
+        </head>
         <body>
             <h1>Результати парсингу:</h1>
-            <p><b>path:</b> {self.path}</p>
-            <p><b>api:</b> {self.api}</p>
-            <p><b>query_params:</b> {self.query_params}</p>
+            <p><b>path:</b> <code>{self.path}</code></p>
+            <p><b>api:</b> <code>{self.api}</code></p>
+            <p><b>query_params:</b> <code>{self.query_params}</code></p>
             
             <hr>
-            <h3>Тестові посилання:</h3>
+            <h3>Тестові посилання для перевірки маршрутів:</h3>
             <ul>
                 {links_html}
-                <li><a href="/">На головну</a></li>
             </ul>
 
             <hr>
