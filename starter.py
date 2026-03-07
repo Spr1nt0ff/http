@@ -134,37 +134,49 @@ class RequestHandler(AccessManagerRequestHandler):
 
 
   def check_static_asset(self, path_file : str) -> bool:
-    '''Проверяет является ли запрос на существующий файл и отправляем его'''
-    if self.command != "GET": 
-      return False
+        '''Перевіряє чи є запит на існуючий файл і надсилає його'''
+        if self.command != "GET": 
+            return False
 
-    if (path_file.endswith('/')
-      or '../' in path_file
-      or not '.' in path_file):
-      return False
+        if path_file == '/favicon.ico':
+            self.send_response(204)
+            self.end_headers()
+            return True
 
-    path = './http/static' + path_file
-    ext = path.rsplit('.', 1)[1]
-    allowed_media_types = {
-      "png": "image/png",
-      "jpg": "image/jpeg",
-      "css": "text/css",
-      "js": "text/javascript"
-    }
-    if ext in allowed_media_types:
-      try:
-        with open(path, "rb") as file :
-          self.send_response(200, "OK")
-          self.send_header("Content-Type", allowed_media_types[ext])
-          self.end_headers()
-          self.wfile.write(file.read())
-          return True
-      except Exception as err :
-        print(err)
-        return
-    else:
-      self.send_error(415, f"Unsupported Media Type: {ext}")
-      return True
+        if (path_file.endswith('/')
+            or '../' in path_file
+            or not '.' in path_file):
+            return False
+
+        path = './static' + path_file
+        
+        ext = path_file.rsplit('.', 1)[1].lower() 
+        
+        allowed_media_types = {
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "css": "text/css",
+            "js": "application/javascript" 
+        }
+        
+        if ext in allowed_media_types:
+            try:
+                with open(path, "rb") as file :
+                    self.send_response(200, "OK")
+                    self.send_header("Content-Type", allowed_media_types[ext])
+                    self.end_headers()
+                    self.wfile.write(file.read())
+                    return True
+            except FileNotFoundError:
+                self.send_error(404, f"Static asset '{path_file}' not found")
+                return True
+            except Exception as err :
+                print(err)
+                self.send_error(500, "Internal server error")
+                return True
+        else:
+            self.send_error(415, f"Unsupported media type '.{ext}' for static asset")
+            return True
 
 
 def main():
