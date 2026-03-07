@@ -6,7 +6,7 @@ from controllers.rest_response import RestResponse, RestStatus
 class ControllerRest:
     def __init__(self, handler: BaseHTTPRequestHandler):
         self.handler = handler
-        self.rest_response = RestResponse() # ИСПРАВЛЕНО
+        self.rest_response = RestResponse() 
 
     def before_execution(self):
         pass
@@ -17,7 +17,7 @@ class ControllerRest:
     def serve(self): 
         mname = 'do_' + self.handler.command
         if not hasattr(self, mname):
-            self.rest_response.status = RestStatus( # ИСПРАВЛЕНО
+            self.rest_response.status = RestStatus( 
                 is_ok = False,
                 code = 405,
                 phrase= "Unsupported method (%r) in '%r'" % (self.handler.command, self.__class__.__name__)
@@ -29,7 +29,7 @@ class ControllerRest:
                 method()
                 self.after_execution()
             except Exception as ex:
-                self.rest_response.status = RestStatus( # ИСПРАВЛЕНО
+                self.rest_response.status = RestStatus( 
                     is_ok = False,
                     code = 500,
                     phrase = "Request processing error: " + str(ex)
@@ -42,7 +42,7 @@ class ControllerRest:
         self.handler.end_headers()
         self.handler.wfile.write(
             json.dumps(
-                self.rest_response, # ИСПРАВЛЕНО
+                self.rest_response, 
                 ensure_ascii=False,
                 default=lambda x: x.__json__() if hasattr(x, "__json__") else str
             ).encode()

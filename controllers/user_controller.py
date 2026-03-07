@@ -45,7 +45,15 @@ class UserController(ControllerRest):
         
         paginated_data = all_users[start_idx:end_idx]
 
-        self.rest_response.data = paginated_data
+        path_parts = self.handler.path.split('?', 1)
+        raw_query_string = path_parts[1] if len(path_parts) > 1 else ""
+
+        self.rest_response.data = {
+            "users": paginated_data,              
+            "query_string": raw_query_string,    
+            "query_params": params,               
+            "api": self.handler.api               
+        }
 
         self.rest_response.meta = {
             "count": len(paginated_data),
