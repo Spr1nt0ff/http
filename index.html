@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REST Pagination Tester</title>
+    <style>
+        body {
+            background-color: bisque;
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin: 20px;
+        }
+
+        h1,
+        h2 {
+            color: #444;
+        }
+
+        /* Панель управления */
+        .controls {
+            background: #fff8e7;
+            border: 1px solid #dcae78;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .controls label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .controls input {
+            width: 60px;
+            padding: 5px;
+            margin-right: 20px;
+            border: 1px solid #ccc;
+        }
+
+        /* Кнопки */
+        button {
+            cursor: pointer;
+            padding: 6px 15px;
+            background: #f0f0f0;
+            border: 1px solid #999;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        button:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        button:disabled {
+            color: #aaa;
+            border-color: #ddd;
+            cursor: not-allowed;
+            background: #f9f9f9;
+        }
+
+        /* Таблица метаданных */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+
+        td,
+        th {
+            border: 1px solid #dcae78;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f4dcb9;
+            width: 25%;
+        }
+
+        /* Вывод JSON */
+        .json-container {
+            background: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            max-width: 800px;
+            overflow-x: auto;
+        }
+
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+            font-family: Consolas, monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>API Pagination Tester</h1>
+
+    <div class="controls">
+        <label>Page: <input type="number" id="inp-page" value="1" min="1"></label>
+        <label>Per Page: <input type="number" id="inp-per-page" value="2" min="1"></label>
+        <button onclick="fetchData()">Load /user</button>
+        <hr style="border: 0; border-top: 1px solid #dcae78; margin: 15px 0;">
+        <button id="btn-first" onclick="goFirst()">First</button>
+        <button id="btn-prev" onclick="goPrev()">Prev</button>
+        <button id="btn-next" onclick="goNext()">Next</button>
+        <button id="btn-last" onclick="goLast()">Last</button>
+    </div>
+
+    <table>
+        <tr>
+            <th>Request URL</th>
+            <td id="out-url">-</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td id="out-status">-</td>
+        </tr>
+        <tr>
+            <th>Pagination Meta</th>
+            <td id="out-meta">-</td>
+        </tr>
+    </table>
+
+    <h2>JSON Response</h2>
+    <div class="json-container">
+        <pre id="out-json">{}</pre>
+    </div>
+
+    <script>
+        let currentTotalPages = 1;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchData();
+        });
+
+        function fetchData() {
+            const page = document.getElementById("inp-page").value || 1;
+            const perPage = document.getElementById("inp-per-page").value || 2;
+            const url = `/user?page=${page}&per_page=${perPage}`;
+
+            document.getElementById("out-url").innerText = url;
+            document.getElementById("out-status").innerText = "Loading...";
+
+            fetch(url)
+                .then(async response => {
+                    const statusText = `${response.status} ${response.statusText}`;
+                    document.getElementById("out-status").innerText = statusText;
+
+                    const data = await response.json();
+
+                    document.getElementById("out-json").innerText = JSON.stringify(data, null, 4);
+
+                    if (data.meta && data.meta.pagination) {
+                        const p = data.meta.pagination;
+                        currentTotalPages = p.total_pages;
+
+                        document.getElementById("inp-page").value = p.page;
+
+                        document.getElementById("out-meta").innerText =
+                            `page=${p.page}, per_page=${p.per_page}, total_items=${data.meta.total_items}, total_pages=${p.total_pages}, has_prev=${p.has_prev}, has_next=${p.has_next}`;
+
+                        // Включаем/выключаем кнопки
+                        document.getElementById("btn-first").disabled = p.page <= 1;
+                        document.getElementById("btn-prev").disabled = !p.has_prev;
+                        document.getElementById("btn-next").disabled = !p.has_next;
+                        document.getElementById("btn-last").disabled = p.page >= p.total_pages;
+                    } else {
+                        document.getElementById("out-meta").innerText = "No metadata found";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("out-status").innerText = "Error!";
+                    document.getElementById("out-json").innerText = String(error);
+                });
+        }
+
+        function goFirst() {
+            document.getElementById("inp-page").value = 1;
+            fetchData();
+        }
+
+        function goPrev() {
+            let page = parseInt(document.getElementById("inp-page").value);
+            if (page > 1) {
+                document.getElementById("inp-page").value = page - 1;
+                fetchData();
+            }
+        }
+
+        function goNext() {
+            let page = parseInt(document.getElementById("inp-page").value);
+            document.getElementById("inp-page").value = page + 1;
+            fetchData();
+        }
+
+        function goLast() {
+            document.getElementById("inp-page").value = currentTotalPages;
+            fetchData();
+        }
+    </script>
+</body>
+
+</html>
