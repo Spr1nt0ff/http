@@ -2,7 +2,6 @@ from http.server import BaseHTTPRequestHandler
 import json
 from controllers.rest_response import RestResponse, RestStatus
 
-
 class ControllerRest:
     def __init__(self, handler: BaseHTTPRequestHandler):
         self.handler = handler
@@ -19,8 +18,8 @@ class ControllerRest:
         if not hasattr(self, mname):
             self.rest_response.status = RestStatus( 
                 is_ok = False,
-                code = 405,
-                phrase= "Unsupported method (%r) in '%r'" % (self.handler.command, self.__class__.__name__)
+                code = RestStatus.METHOD_NOT_ALLOWED.code,
+                phrase= f"{RestStatus.METHOD_NOT_ALLOWED.phrase}: Unsupported method ({self.handler.command}) in '{self.__class__.__name__}'"
             )
         else:
             method = getattr(self, mname)
@@ -31,13 +30,13 @@ class ControllerRest:
             except Exception as ex:
                 self.rest_response.status = RestStatus( 
                     is_ok = False,
-                    code = 500,
-                    phrase = "Request processing error: " + str(ex)
+                    code = RestStatus.INTERNAL_SERVER_ERROR.code,
+                    phrase = f"{RestStatus.INTERNAL_SERVER_ERROR.phrase}: {str(ex)}"
                 )
         self.send_rest_response()    
 
     def send_rest_response(self):
-        self.handler.send_response(200, "OK")
+        self.handler.send_response(self.rest_response.status.code, self.rest_response.status.phrase)
         self.handler.send_header("Content-Type", "application/json; charset=utf-8")
         self.handler.end_headers()
         self.handler.wfile.write(
