@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 from controllers.controller_rest import ControllerRest
+from controllers.rest_response import RestPagination
 import math 
 
 class UserController(ControllerRest):
@@ -26,24 +27,36 @@ class UserController(ControllerRest):
         
         try:
             page = int(params.get("page", 1))
-        except ValueError:
+        except (ValueError, TypeError):
             page = 1
             
         try:
             per_page = int(params.get("per_page", 2))
-        except ValueError:
+        except (ValueError, TypeError):
             per_page = 2
 
         total_items = len(all_users)
-        total_pages = math.ceil(total_items / per_page)
         
-        if page < 1: page = 1
-        if page > total_pages and total_pages > 0: page = total_pages
+        if page < 1: 
+            page = 1
+        if page > 1 and page > math.ceil(total_items / per_page) and total_items > 0:
+            page = math.ceil(total_items / per_page)
 
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         
         paginated_data = all_users[start_idx:end_idx]
+
+        # Формуємо базовий URL для пагінації
+        base_url = f"/user"
+        
+        # Використовуємо новий клас RestPagination
+        pagination = RestPagination(
+            page=page,
+            per_page=per_page,
+            total_items=total_items,
+            base_url=base_url
+        )
 
         path_parts = self.handler.path.split('?', 1)
         raw_query_string = path_parts[1] if len(path_parts) > 1 else ""
@@ -57,12 +70,5 @@ class UserController(ControllerRest):
 
         self.rest_response.meta = {
             "count": len(paginated_data),
-            "total_items": total_items,
-            "pagination": {
-                "page": page,
-                "per_page": per_page,
-                "total_pages": total_pages,
-                "has_prev": page > 1,
-                "has_next": page < total_pages
-            }
+            "pagination": pagination
         }
